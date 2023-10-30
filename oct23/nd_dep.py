@@ -7,12 +7,11 @@ import h5py
 h5_file1 = '/home/tim/research/oct23_data/massgui_export_20231016_0001.h5'
 h5_file2 = '/home/tim/research/oct23_data/massgui_export_20231017_0000.h5'
 
-def load_states_from_h5(h5_file, states):
+def load_state_from_h5(h5_file, state):
     h5 = h5py.File(h5_file, 'r')
     n = 0
     for key in h5.keys():
-        for state in states:
-            n += len(h5[key][state]['energy'])
+        n += len(h5[key][state]['energy'])
 
     energies = np.zeros(n)
     unixnanos = np.zeros(n)
@@ -20,13 +19,12 @@ def load_states_from_h5(h5_file, states):
 
     i0 = 0
     for key in h5.keys():
-        for state in states:
-            g = h5[key][state]
-            n = len(g['energy'])
-            energies[i0:i0+n] = g['energy']
-            unixnanos[i0:i0+n] = g['unixnano']
-            seconds_after_last_external_trigger[i0:i0+n] = g['seconds_after_last_external_trigger']
-            i0+=n
+        g = h5[key][state]
+        n = len(g['energy'])
+        energies[i0:i0+n] = g['energy']
+        unixnanos[i0:i0+n] = g['unixnano']
+        seconds_after_last_external_trigger[i0:i0+n] = g['seconds_after_last_external_trigger']
+        i0+=n
     return np.vstack([energies,unixnanos,seconds_after_last_external_trigger])
 
 def midpoints(x):
@@ -39,7 +37,7 @@ t_bin_edges = np.arange(0,1.003,0.003)
 e_bin_edges = np.arange(750,2000,1)
 state1 = ['S','T','U','X']
 state2 = ['B','C']
-data_arr = np.hstack((load_states_from_h5(h5_file1, state1),load_states_from_h5(h5_file2,state2)))
+data_arr = np.hstack((load_state_from_h5(h5_file1, state1),load_state_from_h5(h5_file2,state2)))
 counts,_,_ = np.histogram2d(data_arr[0,:],data_arr[2,:],bins = [e_bin_edges,t_bin_edges])
 #plt.plot(e_bin_edges[:-1],np.sum(counts,axis=1))
 plt.pcolormesh(t_bin_edges,e_bin_edges,counts)
@@ -59,9 +57,9 @@ t_bin_edges = np.arange(0,1.003,binsize)
 for i,state,sl in zip(range(len(states)),states,state_labels):
 
     if i < 3: # not proud of this
-        data_arr = load_states_from_h5(h5_file2, state)
+        data_arr = load_state_from_h5(h5_file2, state)
     else:
-        data_arr = load_states_from_h5(h5_file1, state)
+        data_arr = load_state_from_h5(h5_file1, state)
 
     for e,l in zip(e_slices,e_labels):
         ind = (data_arr[0,:]>(e-10)) & (data_arr[0,:]<(e+10))
@@ -90,7 +88,7 @@ binsize = .003
 t_bin_edges = np.arange(0,1.003,binsize)
 
 for i,state,sl in zip(range(len(states)),states,state_labels):
-    data_arr = load_states_from_h5(h5_file1, state)
+    data_arr = load_state_from_h5(h5_file1, state)
 
     for e,l in zip(e_slices,e_labels):
         ind = (data_arr[0,:]>(e-10)) & (data_arr[0,:]<(e+10))
@@ -121,9 +119,9 @@ ratio = [1203,1241]
 
 for i,state,sl in zip(range(len(states)),states,state_labels):
     if i < 3: # not proud of this
-        data_arr = load_states_from_h5(h5_file2, state)
+        data_arr = load_state_from_h5(h5_file2, state)
     else:
-        data_arr = load_states_from_h5(h5_file1, state)
+        data_arr = load_state_from_h5(h5_file1, state)
 
     counts,_ = np.histogram(data_arr[0,:],e_bin_edges)
     centers = midpoints(e_bin_edges)
@@ -151,7 +149,7 @@ e_bin_edges = np.arange(750,2000,binsize)
 ratio = [1203,1241]
 
 for i,state,sl in zip(range(len(states)),states,state_labels):
-    data_arr = load_states_from_h5(h5_file1, state)
+    data_arr = load_state_from_h5(h5_file1, state)
 
     counts,_ = np.histogram(data_arr[0,:],e_bin_edges)
     centers = midpoints(e_bin_edges)
