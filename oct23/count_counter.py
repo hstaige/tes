@@ -1,24 +1,25 @@
-import re
-import h5py
+import os
 import numpy as np 
-import matplotlib.pyplot as plt 
-import my_utils as utils
 
-h5_files = ['/home/tim/research/oct23_data/massgui_export_20231014_0006.h5',
-            '/home/tim/research/oct23_data/massgui_export_20231015_0000.h5',
-            '/home/tim/research/oct23_data/massgui_export_20231016_0001.h5',
-            '/home/tim/research/oct23_data/massgui_export_20231017_0000.h5',
-            '/home/tim/research/oct23_data/massgui_export_20231017_0001.h5',
-            '/home/tim/research/oct23_data/massgui_export_20231018_0000.h5']
+dir = '/home/tim/research/EBIT-TES-Data/data_by_state/'
 
+files = os.listdir(dir)
 
-states = [[] for i in range(len(h5_files))]
-files_like_states = [[] for i in range(len(h5_files))]
+def en_slice_counts(data_arr,energy):
+    return np.sum((data_arr[0,:]>(energy-5)) & (data_arr[0,:]<(energy+5)))
 
-for i,h5_file in enumerate(h5_files):
-    h5 = h5py.File(h5_file, 'r')
-    chan_keys = list(h5.keys())
-    state_keys = list(h5[chan_keys[0]].keys())
-    states[i].append([i for i in state_keys if (bool(re.match(r'[A-Z][A-Z]?',i))) & (len(i)<3)])
-    files_like_states[i].append([h5_file for i in state_keys if (bool(re.match(r'[A-Z][A-Z]?',i))) & (len(i)<3)])
-    
+int_time_list = []
+for file in files:
+    data_arr = np.load(f'{dir}{file}')
+
+    int_time = (np.max(data_arr[1,:]) - np.min(data_arr[1,:]))*1e-9 # total integration time [s]
+    int_time_list.append(int_time)
+    # cycle_time = round(np.max(data_arr[2,:])*1e3) # cycle time [ms]
+    # total_counts = np.sum(data_arr[1,:]) # total counts
+    # pr_ni_counts = en_slice_counts(data_arr,1142)
+    # pr_co_counts = en_slice_counts(data_arr,1182)
+    # nd_ni_counts = en_slice_counts(data_arr,1203)
+    # nd_co_counts = en_slice_counts(data_arr,1241)
+ind = np.argsort(int_time_list)[-10:]
+for i in ind:
+    print(int_time_list[i],files[i])
