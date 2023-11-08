@@ -1,37 +1,49 @@
-import numpy as np 
+import numpy as np
 import matplotlib.pyplot as plt
 import my_utils as utils
 
-h5_file = '/home/tim/research/oct23_data/20231016_0001.h5'
+dir = '/home/tim/research/EBIT-TES-Data/data_by_state/'
+files = ['20231015_0000_H.npy','20231015_0000_G.npy','20231015_0000_I.npy','20231017_0001_D.npy']
+labels = ['Pr; 0.5s; 10ms off','Pr; 1s; 10ms off','Pr; 1s; 10ms off','Pr/Ne; 1s; 50ms off']
+t_ranges = [[.479,.489],[.979,.989],[.979,.989],[.939,.989]]
+e_range = [788,808]
+t_binsize = 0.001
+e_binsize = 1
 
-def midpoints(x):
-    return x[:-1]+(x[1]-x[0])/2
+for t_range, file, label in zip(t_ranges,files,labels):
+    plt.figure()
+    data_arr = np.load(dir+file)
 
-def pcm_edges(x):
-    return np.concatenate((x,[x[1]-x[0]]))
+    data_arr = data_arr[:,(data_arr[0,:]>e_range[0]) & (data_arr[0,:]<e_range[1])]
+    data_arr = data_arr[:,(data_arr[2,:]>t_range[0]) & (data_arr[2,:]<t_range[1])]
 
-# check for cal overlap
-states = ['S','F','W']
-state_labels = ['Nd','Pr','Cal']
+    t_bin_edges = np.arange(t_range[0],t_range[1],t_binsize)
+    e_bin_edges = np.arange(e_range[0],e_range[1],e_binsize)
 
-fig,ax = plt.subplots(1,1)
-fig.suptitle('Nd 2.25 kV, Pr 2.15 kV, Cal 5 kV')
+    counts,_,_ = np.histogram2d(data_arr[0,:],data_arr[2,:],bins = [e_bin_edges,t_bin_edges])
+    print(np.sum(counts))
+    plt.plot(utils.midpoints(e_bin_edges),np.sum(counts,axis=1))
+    plt.title(f'{file}; {label}')
 
-binsize = 1
-e_bin_edges = np.arange(750,2000,binsize)
 
-for i,state,sl in zip(range(len(states)),states,state_labels):
-    data_arr = utils.load_state_from_h5(h5_file, state)
+t_range = [0,1]
+e_range = [500,1250]
+t_binsize = 0.0005
+e_binsize = 1
 
-    counts,_ = np.histogram(data_arr[0,:],e_bin_edges)
-    centers = midpoints(e_bin_edges)
-    int_time = (np.max(data_arr[1,:]) - np.min(data_arr[1,:]))*1e-9
-    counts = counts/int_time
+for file, label in zip(files,labels):
+    plt.figure()
+    data_arr = np.load(dir+file)
 
-    ax.plot(centers,counts,label=f'{sl}')
-    ax.set_ylabel(f'[counts /s /{binsize} eV bin]')
-    ax.legend()
-    ax.minorticks_on()
-plt.xlabel('Energy [eV]')
+    data_arr = data_arr[:,(data_arr[0,:]>(e_range[0])) & (data_arr[0,:]<(e_range[1]))]
+    data_arr = data_arr[:,(data_arr[2,:]>(t_range[0])) & (data_arr[2,:]<(t_range[1]))]
+
+    t_bin_edges = np.arange(t_range[0],t_range[1],t_binsize)
+    e_bin_edges = np.arange(e_range[0],e_range[1],e_binsize)
+
+    counts,_,_ = np.histogram2d(data_arr[0,:],data_arr[2,:],bins = [e_bin_edges,t_bin_edges])
+    plt.title(f'{file}; {label}')
+    plt.pcolormesh(t_bin_edges,e_bin_edges,counts)
 
 plt.show()
+quit()
