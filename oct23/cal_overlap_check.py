@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import my_utils as utils
 
-h5_file = '/home/tim/research/oct23_data/massgui_export_20231016_0001.h5'
+h5_file = '/home/tim/research/oct23_data/20231016_0001.h5'
 
 # check for cal overlap
 # states = ['S','F','W','AC']

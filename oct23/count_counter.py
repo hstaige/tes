@@ -22,4 +22,4 @@ for file in files:
     # nd_co_counts = en_slice_counts(data_arr,1241)
 ind = np.argsort(int_time_list)[-10:]
 for i in ind:
-    print(int_time_list[i],files[i])
+    print(f'{int_time_list[i]:.0f}',files[i])
