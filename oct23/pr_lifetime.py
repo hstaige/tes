@@ -8,7 +8,7 @@ dir = '/home/tim/research/EBIT-TES-Data/data_by_state/'
 files = ['20231015_0000_H.npy','20231015_0000_G.npy','20231015_0000_I.npy','20231017_0001_D.npy']
 labels = ['Pr; 0.5s; 10ms off','Pr; 1s; 10ms off','Pr; 1s; 10ms off','Pr/Ne; 1s; 50ms off']
 
-plot = 6
+plot = 5
 # 0: 1d, energy on x, ea state
 # 1: 2d, ea state
 # 2: 1d, energy on x, anode off and on
@@ -216,7 +216,7 @@ elif plot==5:
     result = model.fit(counts_sum, t=all_states_t, params=params)
     result.plot()
     print(result.fit_report())
-
+    plt.show()
 
 elif plot==6:
     plt.figure()
