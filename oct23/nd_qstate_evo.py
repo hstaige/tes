@@ -7,7 +7,7 @@ file = '/home/tim/research/EBIT-TES-Data/data_by_state/'
 run = '20231014_0006'
 states = ['I','K']
 
-plot_type = 4
+plot_type = 1
 
 # 0: 2d
 # 1: 1d, energy on x, Cu/Zn time window

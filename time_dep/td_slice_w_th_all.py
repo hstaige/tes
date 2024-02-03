@@ -8,7 +8,7 @@ from scipy.signal import iirnotch, lfilter
 
 plt.rcParams.update({'font.size': 16})
 
-dir = '/home/tim/research/tes/'
+dir = '/home/tim/research/dec22_data/'
 file = 'td_data/20221221_'
 states = ['0002_V','0002_X','0002_Z','0002_AB','0002_AD','0002_AF','0002_T']
 current_labels = [18.4, 9.2, 13.8, 23, 27.6, 32.2, 36.8]

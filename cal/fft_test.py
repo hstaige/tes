@@ -31,12 +31,10 @@ plt.show()
 
 
 yf = fft(y)
-
 N=len(y)
 T = 1 / binsize
 xf = fftfreq(N, T)[:N//2]
 print(xf[:5])
-
 print(N, yf[:6])
 
 plt.plot(xf[1:], np.abs(yf[1:N//2]))

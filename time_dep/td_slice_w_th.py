@@ -7,7 +7,7 @@ from scipy.signal import iirnotch, lfilter
 
 plt.rcParams.update({'font.size': 16})
 
-dir = '/home/tim/research/tes/'
+dir = '/home/tim/research/dec22_data/'
 file = 'td_data/20221221_'
 states = ['0002_V']
 

@@ -46,6 +46,11 @@ def load_multi_h5s(files): # WIP
                 i0+=n
         np.vstack([energies,unixnanos,seconds_after_last_external_trigger])
 
+def parfor(func, arr):
+    import concurrent.futures
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+            out = list(executor.map(func, arr))
+    return np.array(out)
 
 def midpoints(x):
     return x[:-1]+(x[1]-x[0])/2

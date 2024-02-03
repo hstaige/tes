@@ -4,8 +4,8 @@ import h5py
 # plt.ion()
 # plt.close('all')
 
-h5_file1 = '/home/tim/research/oct23_data/massgui_export_20231016_0001.h5'
-h5_file2 = '/home/tim/research/oct23_data/massgui_export_20231017_0000.h5'
+h5_file1 = '/home/tim/research/oct23_data/20231016_0001.h5'
+h5_file2 = '/home/tim/research/oct23_data/20231017_0000.h5'
 
 def load_state_from_h5(h5_file, state):
     h5 = h5py.File(h5_file, 'r')
@@ -33,14 +33,14 @@ def midpoints(x):
 def pcm_edges(x):
     return np.concatenate((x,[x[1]-x[0]]))
 
-t_bin_edges = np.arange(0,1.003,0.003)
-e_bin_edges = np.arange(750,2000,1)
-state1 = ['S','T','U','X']
-state2 = ['B','C']
-data_arr = np.hstack((load_state_from_h5(h5_file1, state1),load_state_from_h5(h5_file2,state2)))
-counts,_,_ = np.histogram2d(data_arr[0,:],data_arr[2,:],bins = [e_bin_edges,t_bin_edges])
-#plt.plot(e_bin_edges[:-1],np.sum(counts,axis=1))
-plt.pcolormesh(t_bin_edges,e_bin_edges,counts)
+# t_bin_edges = np.arange(0,1.003,0.003)
+# e_bin_edges = np.arange(750,2000,1)
+# state1 = ['S','T','U','X']
+# state2 = ['B','C']
+# data_arr = np.hstack((load_state_from_h5(h5_file1, state1),load_state_from_h5(h5_file2,state2)))
+# counts,_,_ = np.histogram2d(data_arr[0,:],data_arr[2,:],bins = [e_bin_edges,t_bin_edges])
+# #plt.plot(e_bin_edges[:-1],np.sum(counts,axis=1))
+# plt.pcolormesh(t_bin_edges,e_bin_edges,counts)
 
 
 # Current density dependance
