@@ -11,7 +11,7 @@ file = '/home/tim/research/EBIT-TES-Data/data_by_state/'
 run = '20231015_0000'
 states = ['G','H','I']
 
-plot_type = 1
+plot_type = 3
 # 0: determine best th match (dumb)
 # 1: determine best th match (better)
 # 2: determine th corrections

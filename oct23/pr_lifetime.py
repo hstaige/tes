@@ -286,12 +286,16 @@ elif plot==7:
 
     def twoexp(t, A1, tau1, A2, tau2):
         return A1/tau1*np.exp(-t/tau1)+A2/tau2*np.exp(-t/tau2)
-    model = MLEModel(twoexp)
+    def threeexp(t, A1, tau1, A2, tau2, A3, tau3):
+        return A1/tau1*np.exp(-t/tau1)+A2/tau2*np.exp(-t/tau2)+A3/tau3*np.exp(-t/tau3)
+    model = MLEModel(threeexp)
     params = model.make_params()
     params["A1"].set(1, min=0)
-    params["tau1"].set(1e-3, min=10e-6)
+    params["tau1"].set(1e-3, min=1e-6)
     params["A2"].set(1, min=0)
-    params["tau2"].set(1e-3, min=2e-3)
+    params["tau2"].set(1e-4, min=1e-6)
+    params["A3"].set(1, min=0)
+    params["tau3"].set(1e-5, min=1e-6)
 
     result = model.fit(counts, t=utils.midpoints(t_bin_edges), params=params)
     result.plot()
