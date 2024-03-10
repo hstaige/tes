@@ -2,16 +2,29 @@ import math
 import copy
 import numpy as np
 import pyqtgraph as pg
-from scipy.signal import find_peaks, savgol_filter
-import tools
+from scipy.signal import find_peaks
 from lmfit import Parameters, minimize, fit_report
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 from pyqtgraph.Qt import QtWidgets, QtCore, QtGui
 
-file = '/home/tim/research/EBIT-TES-Data/data_by_state/'
+# 'data' should be an np array with columns of energy, time
+dir = '/home/tim/research/EBIT-TES-Data/data_by_state/'
 run = '20231015_0000'
 states = ['G','H','I']
+data = np.empty((3,0))
+for state in states:
+    data = np.hstack((data,np.load(f'{dir}{run}_{state}.npy')))
+data = data[(0,2),:].T
+
+##### defaults: #####
+default_binsize = 0.25
+default_xrange = [600, 1850]
+default_peak_prom = 500
+default_sigma = 1.95
+default_gamma = 5.37
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 def vect_voigt(x,A,mu,sigma,gamma):
     x_len = len(x)
@@ -33,41 +46,45 @@ def resids(params,x,data,uncert):
         model = np.sum(vect_voigt(x,params_arr[:,0],params_arr[:,1],params_arr[:,2],params_arr[:,3]), axis=1)
         return (data-model)/uncert
 
+def midpoints(x):
+    return (x[:-1]+x[1:])/2
+
 class Window(pg.QtWidgets.QMainWindow):
     sigKeyPress = QtCore.pyqtSignal(object)
 
     def __init__(self):
         super().__init__()
+        self.binsize = str(default_binsize)
+        self.xrange = default_xrange
+        self.prom = str(default_peak_prom)
+        self.sigma = str(default_sigma)
+        self.gamma = str(default_gamma)
+        self.data = data
+
         pg.setConfigOptions(antialias=True)
-        self.load_data()
         self.setWindowTitle("PyQtGraph")
         self.init_UiComponents()
         self.show()
     
-    def load_data(self):
-        self.data = np.empty((3,0))
-        for state in states:
-            self.data = np.hstack((self.data,np.load(f'{file}{run}_{state}.npy')))
-    
-    def bin_data(self, data):
-        e_binsize = .25
-        e_bin_edges = np.arange(600,1850,e_binsize)
-        binned_counts,_ = np.histogram(data[0,:],bins=e_bin_edges)
-        energies = tools.midpoints(e_bin_edges)
-        return binned_counts, energies
+    def bin_data(self):
+        e_bin_edges = np.arange(self.xrange[0],self.xrange[1],float(self.binsize))
+        self.binned_counts,_ = np.histogram(self.data[:,0],bins=e_bin_edges)
+        self.energies = midpoints(e_bin_edges)
     
     def init_peak_find(self):
-        filtered_counts = savgol_filter(self.binned_counts,window_length=20,polyorder=3)
-        peak_inds,_ = find_peaks(filtered_counts,prominence=float(self.prom_input.text()))
+        peak_inds,_ = find_peaks(self.binned_counts,prominence=float(self.prom_input.text()))
         self.peak_energies = self.energies[peak_inds]
         self.peak_amp = self.binned_counts[peak_inds]
+        self.peak_sigma = np.ones(len(self.peak_energies))*float(self.sigma)
+        self.peak_gamma = np.ones(len(self.peak_energies))*float(self.gamma)
 
     def peak_find(self):
-        filtered_counts = savgol_filter(self.binned_counts,window_length=20,polyorder=3)
-        peak_inds,_ = find_peaks(filtered_counts,prominence=float(self.prom_input.text()))
+        peak_inds,_ = find_peaks(self.binned_counts,prominence=float(self.prom_input.text()))
         self.peak_energies = self.energies[peak_inds]
         self.peak_amp = self.binned_counts[peak_inds]
-        self.vals = np.column_stack((self.peak_energies,self.peak_amp))
+        self.peak_sigma = np.ones(len(self.peak_energies))*float(self.sigma)
+        self.peak_gamma = np.ones(len(self.peak_energies))*float(self.gamma)
+        self.vals = np.column_stack((self.peak_energies,self.peak_amp,self.peak_sigma,self.peak_gamma))
         self.table.setData(self.vals)
         self.update_table()
     
@@ -81,7 +98,7 @@ class Window(pg.QtWidgets.QMainWindow):
 
     def read_table(self):
         tab_values = np.array([self.process_table_item(item) for item in self.table.items])
-        return np.column_stack((tab_values[::2],tab_values[1::2]))
+        return np.column_stack((tab_values[::4],tab_values[1::4],tab_values[2::4],tab_values[3::4]))
 
     def update_table(self):
         self.curr_vals = self.read_table()
@@ -94,6 +111,8 @@ class Window(pg.QtWidgets.QMainWindow):
 
         self.peak_energies = self.vals[:,0]
         self.peak_amp = self.vals[:,1]
+        self.peak_sigma = self.vals[:,2]
+        self.peak_gamma = self.vals[:,3]
         self.update_plot()
 
     def update_table_wvals(self):
@@ -106,6 +125,8 @@ class Window(pg.QtWidgets.QMainWindow):
 
         self.peak_energies = self.vals[:,0]
         self.peak_amp = self.vals[:,1]
+        self.peak_sigma = self.vals[:,2]
+        self.peak_gamma = self.vals[:,3]
         self.update_plot()
 
     def keyPressEvent(self, ev):
@@ -117,7 +138,7 @@ class Window(pg.QtWidgets.QMainWindow):
             scene_coords = ev.scenePos()
             if self.pw.sceneBoundingRect().contains(scene_coords):
                 mouse_point = vb.mapSceneToView(scene_coords)
-                self.table.addRow([mouse_point.x(),mouse_point.y()])
+                self.table.addRow([mouse_point.x(),mouse_point.y(),self.sigma,self.gamma])
                 self.update_table()
         elif ev.button() == QtCore.Qt.MouseButton.RightButton:
             vb = self.pw.plotItem.vb
@@ -131,13 +152,16 @@ class Window(pg.QtWidgets.QMainWindow):
     def update_plot(self):
         self.pt.clear()
         self.pt.plot(self.energies,self.binned_counts,pen=pg.mkPen('w', width=2))
-        self.pt.multiDataPlot(x=self.energies,y=vect_voigt(self.energies,self.peak_amp,self.peak_energies,float(self.sigma),float(self.gamma)).T,constKwargs={'pen':pg.mkPen('g', width=1)})
+        self.pt.multiDataPlot(x=self.energies,y=vect_voigt(self.energies,self.peak_amp,self.peak_energies,self.peak_sigma,self.peak_gamma).T,constKwargs={'pen':pg.mkPen('g', width=1)})
         self.draw_region()
 
     def update_voigts(self):
         self.gamma = self.gamma_input.text()
         self.sigma = self.sigma_input.text()
-        self.update_plot()
+        self.curr_vals = copy.deepcopy(self.vals)
+        self.curr_vals[:,2] = np.ones(len(self.peak_energies))*float(self.sigma)
+        self.curr_vals[:,3] = np.ones(len(self.peak_energies))*float(self.gamma)
+        self.update_table_wvals()
 
     def undo(self):
         self.table.clear()
@@ -181,21 +205,40 @@ class Window(pg.QtWidgets.QMainWindow):
                       (f'P{en*10:.0f}_gamma', float(self.gamma), not self.fix_gamma.isChecked(), 0, None, None, None)]
             params_tot.add_many(*to_add)
 
-        self.results = minimize(resids,params_tot,args=(fit_energies, fit_counts, fit_counts**.5))
+        uncert = fit_counts**.5
+        uncert[uncert==0] = 1e-6
+        self.results = minimize(resids,params_tot,args=(fit_energies, fit_counts, uncert))
         fit_params = np.array(list(self.results.params.valuesdict().values()))
         fit_params= np.reshape(fit_params,(-1,4))
-        self.curr_vals = fit_params[:,(1,0)]
+        self.curr_vals = fit_params[:,(1,0,2,3)]
         fit_curve = np.sum(vect_voigt(fit_energies,fit_params[:,0],fit_params[:,1],fit_params[:,2],fit_params[:,3]), axis=1)
         self.update_table_wvals()
         self.pt.plot(fit_energies, fit_curve, pen=pg.mkPen('r', width=1))
 
+    def rebin(self):
+        self.binsize = float(self.binsize_input.text())
+        e_bin_edges = np.arange(self.xrange[0],self.xrange[1],self.binsize)
+        self.binned_counts,_ = np.histogram(self.data[:,0],bins=e_bin_edges)
+        self.energies = midpoints(e_bin_edges)
+        self.peak_find()
+
+    def save_fit(self):
+        print(fit_report(self.results))
+        with open('fit.txt', 'a') as the_file:
+            for param in self.results.params.keys():
+                the_file.write(f'{param},{self.results.params[param].value},{self.results.params[param].stderr}\n')
+
+
     def init_table_widget(self):
         undo_btn = QtWidgets.QPushButton('Undo Last Action')
-        btn = QtWidgets.QPushButton('Add Line')
         pbtn = QtWidgets.QPushButton('Print')
         pdbtn = QtWidgets.QPushButton('Find Peaks')
+        rebin_btn = QtWidgets.QPushButton('ReBin Data')
 
-        self.prom ='500'
+        self.binsize_input = QtWidgets.QLineEdit()
+        self.binsize_input.setValidator(QtGui.QDoubleValidator())
+        self.binsize_input.insert(self.binsize)
+
         self.prom_input = QtWidgets.QLineEdit()
         self.prom_input.setValidator(QtGui.QDoubleValidator())
         self.prom_input.insert(self.prom)
@@ -203,25 +246,30 @@ class Window(pg.QtWidgets.QMainWindow):
         self.table = pg.TableWidget(editable=True)
 
         undo_btn.clicked.connect(self.undo)
-        btn.clicked.connect(lambda: self.table.addRow([0,0]))
         pbtn.clicked.connect(lambda: print(self.read_table()))
         self.sigKeyPress.connect(lambda event: self.update_table() if event.key()==16777220 else False)
         pdbtn.clicked.connect(self.peak_find)
+        rebin_btn.clicked.connect(self.rebin)
 
         self.table.setFormat('%.2f')
-        self.binned_counts, self.energies = self.bin_data(self.data)
+        self.bin_data()
         self.init_peak_find()
-        self.vals = np.column_stack((self.peak_energies,self.peak_amp))
+        self.vals = np.column_stack((self.peak_energies,self.peak_amp,self.peak_sigma,self.peak_gamma))
         self.prev_vals = self.vals
         self.table.setData(self.vals)
 
         lo = pg.LayoutWidget()
-        lo.addWidget(self.table,0,0,1,2)
+        lo.addWidget(self.table,1,0,1,3)
+
+        lo.addWidget(QtWidgets.QLabel('Bin Size='),2,0,1,1)
+        lo.addWidget(self.binsize_input,2,1)
+        lo.addWidget(rebin_btn,2,2,1,1)
+
         lo.addWidget(QtWidgets.QLabel('Peak Prom='),3,0,1,1)
         lo.addWidget(self.prom_input,3,1)
-        lo.addWidget(pdbtn,4,0,1,2)
-        lo.addWidget(btn,5,0,1,2)
-        lo.addWidget(undo_btn,6,0,1,2)
+        lo.addWidget(pdbtn,3,2,1,1)
+
+        lo.addWidget(undo_btn,6,0,1,3)
         #lo.addWidget(pbtn,7,0)
         dock = Dock('',size=(100,100))
         dock.addWidget(lo)
@@ -230,12 +278,10 @@ class Window(pg.QtWidgets.QMainWindow):
         return dock
 
     def init_voigt_widget(self):
-        self.gamma ='5.37'
         self.gamma_input = QtWidgets.QLineEdit()
         self.gamma_input.setValidator(QtGui.QDoubleValidator())
         self.gamma_input.insert(self.gamma)
 
-        self.sigma = '1.95'
         self.sigma_input = QtWidgets.QLineEdit()
         self.sigma_input.setValidator(QtGui.QDoubleValidator())
         self.sigma_input.insert(self.sigma)
@@ -282,7 +328,7 @@ class Window(pg.QtWidgets.QMainWindow):
 
         toggle_region_btn.clicked.connect(self.region_toggle)
         fit_btn.clicked.connect(self.run_fit)
-        results_btn.clicked.connect(lambda: print(fit_report(self.results)))
+        results_btn.clicked.connect(self.save_fit)
 
         lo = pg.LayoutWidget()
         lo.addWidget(self.fix_sigma,0,0,1,1)

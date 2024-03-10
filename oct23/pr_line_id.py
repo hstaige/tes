@@ -10,10 +10,12 @@ import my_utils as utils
 from lmfit import Parameters, minimize, fit_report, Model, create_params
 
 file = '/home/tim/research/EBIT-TES-Data/data_by_state/'
-run = '20231015_0000'
-states = ['G','H','I']
+# run = '20231015_0000'
+# states = ['G','H','I']
+run = '20231016_0001'
+states = ['H']
 
-plot_type = 7
+plot_type = 1
 # 0: determine best th match (dumb)
 # 1: determine best th match (better)
 # 2: determine th corrections
@@ -61,7 +63,7 @@ if plot_type==0:
 
 if plot_type==1:
     e_binsize = 0.5
-    e_bin_edges = np.arange(750, 1700, e_binsize)
+    e_bin_edges = np.arange(750, 2000, e_binsize)
     data_arr = np.empty((3,0))
     for state in states:
         data_arr = np.hstack((data_arr,np.load(f'{file}{run}_{state}.npy')))
@@ -148,7 +150,7 @@ if plot_type==3:
         data_arr = np.hstack((data_arr,np.load(f'{file}{run}_{state}.npy')))
 
     e_binsize = .5
-    e_bin_edges = np.arange(600,1850,e_binsize)
+    e_bin_edges = np.arange(600,2000,e_binsize)
     e_bin_edges = np.arange(1600,1850,e_binsize)
     binned_counts,_ = np.histogram(data_arr[0,:],bins=e_bin_edges)
     energies = utils.midpoints(e_bin_edges)
@@ -209,16 +211,20 @@ if plot_type==3:
         params_tot.add_many(g)
 
     results = minimize(resids,params_tot,args=(x,binned_counts,uncert))
+    for var in results.params.keys():
+        print(results.params[var].value,results.params[var].stderr)
+    
     fit_params = np.array(list(results.params.valuesdict().values()))
     fit_params= np.reshape(fit_params,(-1,4))
     plt.plot(x,vect_gauss(x,fit_params[:,0],fit_params[:,1],fit_params[:,2],fit_params[:,3]),label='fit')
-    print(fit_report(results))
+    #print(fit_report(results))
+
     pre_params = np.array(list(params_tot.valuesdict().values()))
     pre_params= np.reshape(pre_params,(-1,4))
     #plt.plot(x,vect_gauss(x,pre_params[:,0],pre_params[:,1],pre_params[:,2],pre_params[:,3]),label='prefit')
     plt.plot(x,binned_counts-vect_gauss(x,fit_params[:,0],fit_params[:,1],fit_params[:,2],fit_params[:,3]),label='resids')
     plt.legend()
-    plt.show()
+    #plt.show()
 
 if plot_type==4:
     data_arr = np.empty((3,0))
