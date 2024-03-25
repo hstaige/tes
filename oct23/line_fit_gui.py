@@ -1,5 +1,6 @@
 import math
 import copy
+import re
 import numpy as np
 import pyqtgraph as pg
 from scipy.signal import find_peaks
@@ -226,7 +227,8 @@ class Window(pg.QtWidgets.QMainWindow):
         print(fit_report(self.results))
         with open('fit.txt', 'a') as the_file:
             for param in self.results.params.keys():
-                the_file.write(f'{param},{self.results.params[param].value},{self.results.params[param].stderr}\n')
+                if re.search(r'_mu',param):
+                    the_file.write(f'{self.results.params[param].value:.1f},{self.results.params[param].stderr:.1f}\n')
 
 
     def init_table_widget(self):
