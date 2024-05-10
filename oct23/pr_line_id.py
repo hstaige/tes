@@ -9,11 +9,14 @@ from scipy.interpolate import CubicSpline
 import my_utils as utils
 from lmfit import Parameters, minimize, fit_report, Model, create_params
 
+plt.rcParams.update({'font.size': 16})
+
+
 file = '/home/tim/research/EBIT-TES-Data/data_by_state/'
 # run = '20231015_0000'
 # states = ['G','H','I']
-run = '20231016_0001'
-states = ['H']
+run = '20231015_0000'
+states = ['G','H','I']
 
 plot_type = 1
 # 0: determine best th match (dumb)
@@ -62,8 +65,9 @@ if plot_type==0:
     plt.show()
 
 if plot_type==1:
+    fig, ax = plt.subplots(figsize=(8.09*2,5*2))
     e_binsize = 0.5
-    e_bin_edges = np.arange(750, 2000, e_binsize)
+    e_bin_edges = np.arange(750, 1800, e_binsize)
     data_arr = np.empty((3,0))
     for state in states:
         data_arr = np.hstack((data_arr,np.load(f'{file}{run}_{state}.npy')))
@@ -103,7 +107,11 @@ if plot_type==1:
     min_results = min_results[np.argsort(np.float32(min_results[:,1]))]
     print(min_results)
     plt.plot(energies,counts,color='k')
+    plt.xlabel('Energy [eV]')
+    plt.ylabel('Norm Intensity')
     plt.legend()
+    plt.tight_layout()
+    plt.minorticks_on()
     plt.show()
 
 if plot_type==2:
