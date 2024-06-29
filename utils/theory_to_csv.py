@@ -28,5 +28,5 @@ def theory_csv(input_dat, output_dest):
     theory.to_csv(output_dest)
 
 
-dir = '/home/tim/research/tes/theory'
-theory_csv(f'{dir}/Nd.dat', f'{dir}/Nd.csv')
+dir = '/home/tim/research/apr24_data/theory'
+theory_csv(f'{dir}/out.m.qn', f'{dir}/Nd.csv')

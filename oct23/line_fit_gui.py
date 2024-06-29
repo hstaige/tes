@@ -10,18 +10,18 @@ from pyqtgraph.dockarea.DockArea import DockArea
 from pyqtgraph.Qt import QtWidgets, QtCore, QtGui
 
 # 'data' should be an np array with columns of energy, time
-dir = '/home/tim/research/EBIT-TES-Data/data_by_state/'
-run = '20231015_0000'
-states = ['G','H','I']
-data = np.empty((3,0))
+dir = '/home/tim/research/apr24_data/data_by_state/'
+run = '20240419_0000'
+states = ['B_OFF','C_OFF','D_OFF']
+data = np.empty((2,0))
 for state in states:
     data = np.hstack((data,np.load(f'{dir}{run}_{state}.npy')))
-data = data[(0,2),:].T
+data = data[(0,1),:].T
 
 ##### defaults: #####
-default_binsize = 0.25
-default_xrange = [600, 1850]
-default_peak_prom = 500
+default_binsize = 0.5
+default_xrange = [2000, 6000]
+default_peak_prom = 10
 default_sigma = 1.95
 default_gamma = 5.37
 
@@ -45,7 +45,7 @@ def vect_voigt(x,A,mu,sigma,gamma):
 def resids(params,x,data,uncert):
         params_arr = np.reshape(params,(-1,4))
         model = np.sum(vect_voigt(x,params_arr[:,0],params_arr[:,1],params_arr[:,2],params_arr[:,3]), axis=1)
-        return (data-model)/uncert
+        return (data-model)#/uncert
 
 def midpoints(x):
     return (x[:-1]+x[1:])/2
@@ -200,7 +200,7 @@ class Window(pg.QtWidgets.QMainWindow):
 
         params_tot = Parameters()
         for en, amp in zip(fit_peak_energies, fit_peak_amp):
-            to_add = [(f'P{en*10:.0f}_A', float(amp*3), True, 0, None, None, None),
+            to_add = [(f'P{en*10:.0f}_A', float(amp), True, 0, None, None, None),
                       (f'P{en*10:.0f}_mu', float(en), True, float(en)-5, float(en)+5, None, None),
                       (f'P{en*10:.0f}_sigma', float(self.sigma), not self.fix_sigma.isChecked(), 0, None, None, None),
                       (f'P{en*10:.0f}_gamma', float(self.gamma), not self.fix_gamma.isChecked(), 0, None, None, None)]
